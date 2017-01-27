@@ -2,13 +2,14 @@ var express = require('express');
 var passport = require('passport');
 var cookieParser = require('cookie-parser');
 var session = require('express-session');
-var OpenIDConnectStrategy = require('passport-idaas-openidconnect').IDaaSOIDCStrategy;
+//var OpenIDConnectStrategy = require('passport-idaas-openidconnect').IDaaSOIDCStrategy;
 var app = express();
 
 app.use(cookieParser());
-app.use(session({ secret: 'keyboard cat', resave: false, saveUninitialized: true }));
+app.use(session({resave: 'true', saveUninitialized: 'true' , secret: 'keyboard cat'}));
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(session());
 
 if (process.env.VCAP_SERVICES) {
     app.use(ensureAuthenticated);
@@ -53,22 +54,31 @@ passport.use(Strategy);
 app.get('/login', passport.authenticate('openidconnect', {}));
 
 function ensureAuthenticated(req, res, next) {
-    if(!req.isAuthenticated()) {
+    if(!req.isAuthenticated() && !req.path.indexOf('/login') == 0 && !req.path.indexOf('/auth') == 0){
         req.session.originalUrl = req.originalUrl;
         res.redirect('/login');
     } else {
         return next();
     }
 }
+var redirect_url;
 
 app.get('/auth/sso/callback',function(req,res,next) {
     app.use(express.static(__dirname + '/public'));
-    var redirect_url = req.session.originalUrl;
+    redirect_url = req.session.originalUrl;
     passport.authenticate('openidconnect', {
-        successRedirect: 'https://sso4saml.mybluemix.net/index.html',
+        successRedirect: '/success',
         failureRedirect: '/failure',
     })(req,res,next);
 });
+
+
+app.get('/success',ensureAuthenticated,function(request,response){
+    response.redirect(redirect_url);
+    response.write("Success");
+    response.end();
+});
+
 app.get('/hello', ensureAuthenticated, function(request, response) {
     request.send('Hello, '+ request.user['id'] + '!\n' + '<a href="/logout">Log Out</a>');
 });
@@ -79,10 +89,13 @@ app.get('/logout', function(req, res){
 app.get('/failure', function(req, res) {
     res.send('Login failed');
 });
+
+/*
 app.get('/', function (req, res) {
-    /*res.send('<h1>Bluemix Service: Single Sign On</h1>' + '<p>Sign In with a Social Identity Source (SIS): Cloud directory, Facebook, Google+ or LinkedIn.</p>' + '<a href="/auth/sso/callback">Sign In with a SIS</a>');*/
+    /!*res.send('<h1>Bluemix Service: Single Sign On</h1>' + '<p>Sign In with a Social Identity Source (SIS): Cloud directory, Facebook, Google+ or LinkedIn.</p>' + '<a href="/auth/sso/callback">Sign In with a SIS</a>');*!/
     res.redirect('/auth/sso/callback');
 });
+*/
 
 app.route('/*')
     .get(function(req, res) {
