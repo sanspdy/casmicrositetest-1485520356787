@@ -96,11 +96,11 @@ app.get('/', function (req, res) {
     res.redirect('/auth/sso/callback');
 });
 */
-
-app.route('/*')
+/*
+app.route('/!*')
     .get(function(req, res) {
         res.redirect('/auth/sso/callback');
-    });
+    });*/
 
 var appport = process.env.VCAP_APP_PORT || 8888;
 var host = (process.env.VCAP_APP_HOST || 'localhost');
