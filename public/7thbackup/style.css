@@ -1,0 +1,4 @@
+
+.ibm-carousel-prev::before, .ibm-carousel-next::before{
+	text-indent:-24px !important
+}
